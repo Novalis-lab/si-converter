@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SI単位変換ノート｜novalis</title>
+<meta name="description" content="圧力・温度・エネルギー・力・仕事率・体積・密度・接頭語の単位を、計算の途中つきで変換できる学習用ツール">
+<link rel="canonical" href="https://novalis-lab.github.io/si-converter/">
+<meta name="theme-color" content="#0b0b0d">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="novalis">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:url" content="https://novalis-lab.github.io/si-converter/">
+<meta property="og:title" content="SI単位変換ノート｜計算の途中つきで単位を変換">
+<meta property="og:description" content="圧力・温度・エネルギー・力・仕事率・体積・密度・接頭語を、計算の途中つきで変換できる無料の学習用ツール。">
+<meta property="og:image" content="https://novalis-lab.github.io/ogp.png">
+<meta name="twitter:card" content="summary_large_image">
+<!-- サイトのアイコン（novalis共通のロゴ） -->
+<link rel="icon" href="https://novalis-lab.github.io/icon.svg" type="image/svg+xml">
+<link rel="icon" href="https://novalis-lab.github.io/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="https://novalis-lab.github.io/apple-touch-icon.png">
+<!-- 全ページ共通（フォント：Zen Maru Gothic・Unbounded／角の丸み） -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://novalis-lab.github.io/common.css?v=20261113c">
+<style>
+/* 色はトップページ（novalis）とそろえています。
+   フォント（--font・--font-en）と角の丸み（--radius）は common.css で共通管理 */
+:root{
+  --bg:#0b0b0d; --bg-2:#141417; --card:rgba(255,255,255,.025);
+  --ink:#f2f0ea; --text:#f2f0ea; --sub:#8b8a86; --muted:#8b8a86; --dim:#5d5c58;
+  --line:rgba(255,255,255,.12); --field:#08080a;
+  --accent:#6f9fd4; --accent-rgb:111,159,212; --accent-ink:#0b0b0d;
+  --accent-soft:rgba(111,159,212,.1);
+  --warn:#e8a87c; --warn-soft:rgba(232,168,124,.1);
+  --step:rgba(255,255,255,.04); --hl:rgba(111,159,212,.16);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;color-scheme:dark}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);
+  font-family:var(--font);font-size:18px;line-height:1.6;overflow-x:hidden}
+::selection{background:var(--accent);color:var(--accent-ink)}
+
+/* ---------- 背景（縦のガイド線と斜めのライン：トップページと同じ） ---------- */
+.bg{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.bg-cols{position:absolute;inset:0;max-width:752px;margin:0 auto;
+  border-left:1px solid rgba(255,255,255,.05);border-right:1px solid rgba(255,255,255,.05)}
+.bg-slash{position:absolute;top:-10%;right:-30%;width:90%;height:120%;
+  background:repeating-linear-gradient(-55deg,rgba(255,255,255,.04) 0 1px,transparent 1px 14px);
+  -webkit-mask-image:linear-gradient(200deg,#000 10%,transparent 55%);mask-image:linear-gradient(200deg,#000 10%,transparent 55%);
+  animation:drift 14s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate(-60px,24px)}}
+
+.wrap{max-width:752px;margin:0 auto;padding:0 16px calc(24px + env(safe-area-inset-bottom))}
+
+/* ---------- 上のバーと見出し ---------- */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 0;
+  border-bottom:1px solid var(--line);font-family:var(--font-en);font-size:10px;font-weight:700;letter-spacing:.22em}
+.logo{display:inline-flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:800;font-size:13px;letter-spacing:.18em}
+.logo-mark{width:11px;height:11px;background:var(--accent);transform:rotate(45deg)}
+.logo:hover{color:var(--accent)}
+.topbar a.back{color:var(--sub);text-decoration:none}
+.topbar a.back:hover{color:var(--accent)}
+header{padding:0 0 8px}
+.kicker{display:flex;align-items:center;gap:12px;margin:30px 0 10px;
+  font-family:var(--font-en);font-size:11px;font-weight:700;letter-spacing:.3em;color:var(--sub)}
+.kicker::before{content:"";width:32px;height:1px;background:var(--accent)}
+h1{font-size:clamp(30px,8.5vw,42px);margin:0;line-height:1.25;letter-spacing:.02em;font-weight:700}
+h1 span{color:var(--accent)}
+h1 .u-line{color:inherit;
+  background:linear-gradient(transparent 84%,var(--accent) 84%,var(--accent) 94%,transparent 94%) no-repeat left/0% 100%;
+  animation:underline .9s cubic-bezier(.7,0,.2,1) .4s forwards}
+@keyframes underline{to{background-size:100% 100%}}
+.lead{color:var(--sub);font-size:.92rem;margin:14px 0 0;padding-top:14px;border-top:1px solid var(--line)}
+
+/* ---------- タブ（横にスクロール） ---------- */
+.tabs{position:sticky;top:0;z-index:5;margin:18px -16px 0;padding:10px 16px;
+  background:rgba(11,11,13,.88);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;border:1px solid var(--line);background:transparent;color:var(--sub);
+  font:inherit;font-size:.95rem;font-weight:700;padding:9px 15px;border-radius:var(--radius,8px);cursor:pointer;white-space:nowrap;
+  transition:color .2s,border-color .2s,background .2s,box-shadow .3s}
+.tab:hover{color:var(--ink);border-color:var(--accent)}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);
+  box-shadow:0 0 14px 1px rgba(var(--accent-rgb),.5)}
+
+/* ---------- カード（番号つき） ---------- */
+main{counter-reset:card}
+section.card{counter-increment:card;position:relative;margin-top:18px;padding:22px 18px 20px;
+  background:var(--card);border:1px solid var(--line);border-top:1px solid var(--ink);border-radius:var(--radius,8px)}
+section.card.hidden{display:none}
+main > section.card:first-of-type{counter-increment:none}   /* 表示設定のカード（見出しなし）は番号を数えない */
+#sig{padding-right:34px !important}                          /* 有効数字：矢印と文字が重ならないように */
+h2{font-size:1.15rem;margin:0 0 14px;font-weight:700;letter-spacing:.02em}
+h2::before{content:counter(card,decimal-leading-zero) " /";display:block;margin-bottom:4px;
+  font-family:var(--font-en);font-size:11px;font-weight:700;letter-spacing:.2em;color:var(--accent)}
+h3{font-size:1rem;margin:0 0 8px;color:var(--sub)}
+label.lbl,.lbl{display:block;font-size:.8rem;font-weight:700;letter-spacing:.14em;color:var(--sub);margin:0 0 6px}
+
+/* ---------- 入力 ---------- */
+.inrow{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
+.num,.sel,.pm,.exp{border:1px solid rgba(255,255,255,.2);border-radius:var(--radius,8px);background:var(--field);color:var(--ink);
+  transition:border-color .15s,box-shadow .2s}
+.num{flex:1 1 160px;min-width:0;font-family:var(--font-en);font-size:1.6rem;font-weight:700;padding:10px 14px;caret-color:var(--accent)}
+.num:focus,.sel:focus,.exp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 0 20px 2px rgba(var(--accent-rgb),.35)}
+.sel{font:inherit;font-size:1.1rem;font-weight:700;padding:10px 38px 10px 12px;min-width:0;-webkit-appearance:none;appearance:none;
+  background:var(--field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%236f9fd4' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center}
+.sel option{background:#141417;color:var(--ink)}
+.pm{font-family:var(--font-en);font-size:1.3rem;width:54px;cursor:pointer}
+.pm:hover{border-color:var(--accent);color:var(--accent)}
+.exprow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:10px;color:var(--sub);font-size:.95rem}
+.exp{width:84px;font-family:var(--font-en);font-size:1.1rem;padding:6px 10px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius,8px);overflow:hidden;margin-top:10px}
+.seg button{font:inherit;font-size:.95rem;font-weight:700;padding:8px 14px;border:0;background:transparent;color:var(--sub);cursor:pointer;transition:color .2s,background .2s}
+.seg button:hover{color:var(--ink)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.gaugebox{margin-top:14px;padding:14px;background:var(--accent-soft);border:1px solid rgba(var(--accent-rgb),.35);border-radius:var(--radius,8px)}
+.gaugebox .row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.gaugebox .row+.row{margin-top:8px}
+.gaugebox .seg{margin-top:0}
+.gaugebox .t{min-width:4.5em;font-size:.95rem}
+
+/* ---------- 結果（線で区切ったリスト・入力した単位を光らせる） ---------- */
+.results{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.results li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 6px;border-bottom:1px solid var(--line)}
+.results li.src{margin:8px 0;padding:14px 14px;border:0;border-radius:var(--radius,8px);background:var(--accent);color:var(--accent-ink);
+  box-shadow:0 0 18px 2px rgba(var(--accent-rgb),.45),0 0 48px 6px rgba(var(--accent-rgb),.2);animation:glow 2.8s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 26px 4px rgba(var(--accent-rgb),.65),0 0 70px 12px rgba(var(--accent-rgb),.3)}}
+.results .val{font-family:var(--font-en);font-size:1.3rem;font-weight:700;font-variant-numeric:tabular-nums;word-break:break-all;letter-spacing:-.01em}
+.results .unit{font-size:1rem;font-weight:700;color:var(--sub);white-space:nowrap}
+.results li.src .unit{color:rgba(11,11,13,.7)}
+.results .unit small{font-size:.78rem}
+
+/* ---------- 計算の途中 ---------- */
+.steps{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.steps li{background:var(--step);border-left:3px solid var(--accent);border-radius:0 var(--radius,8px) var(--radius,8px) 0;
+  padding:10px 14px;font-size:.98rem;font-variant-numeric:tabular-nums;word-break:break-word}
+.steps li b{color:var(--accent)}
+.steps .note{color:var(--sub);font-size:.86rem;display:block}
+
+.memo{margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.memo li{margin:0;padding:10px 4px 10px 22px;border-bottom:1px solid var(--line);position:relative;font-size:.98rem}
+.memo li::before{content:"";position:absolute;left:4px;top:1.15em;width:7px;height:7px;background:var(--accent);transform:rotate(45deg)}
+.note-box{margin-top:12px;font-size:.88rem;color:var(--sub);background:var(--step);padding:10px 14px;border-radius:var(--radius,8px)}
+.warn{margin-top:12px;font-size:.95rem;color:var(--warn);background:var(--warn-soft);border:1px solid rgba(232,168,124,.35);padding:10px 14px;border-radius:var(--radius,8px)}
+.hidden{display:none !important}
+
+/* ---------- 表示設定 ---------- */
+.settings{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center}
+.settings .grp{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.settings .seg{margin-top:0}
+.settings .lbl{margin:0}
+
+/* ---------- 表 ---------- */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:1rem;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left;white-space:nowrap}
+th{color:var(--sub);font-weight:700;font-size:.85rem;letter-spacing:.06em}
+td.sym{font-family:var(--font-en);font-weight:700;font-size:1.1rem;color:var(--accent)}
+table.matrix{font-size:.9rem}
+table.matrix th,table.matrix td{text-align:center;padding:7px 8px}
+table.matrix td.one{background:var(--hl);color:var(--accent);font-weight:700}
+
+/* ---------- 斜めに流れる帯（トップページと同じ） ---------- */
+.ticker-wrap{position:relative;margin:36px -16px 0;padding:40px 0;overflow:hidden;overflow-x:clip;overflow-y:visible}
+.ticker{margin:0 -5%;padding:11px 0;background:var(--accent);color:var(--accent-ink);transform:rotate(-2.5deg);overflow:hidden;white-space:nowrap;
+  box-shadow:0 0 18px 2px rgba(var(--accent-rgb),.5),0 0 48px 6px rgba(var(--accent-rgb),.22);animation:glow-band 2.8s ease-in-out infinite}
+@keyframes glow-band{50%{box-shadow:0 0 26px 4px rgba(var(--accent-rgb),.7),0 0 70px 12px rgba(var(--accent-rgb),.32)}}
+.ticker-track{display:inline-flex;animation:marquee 30s linear infinite}
+.ticker-track span{display:inline-flex;align-items:center;gap:22px;padding-right:22px;font-family:var(--font-en);font-weight:800;font-size:15px;letter-spacing:.06em}
+.ticker-track span::after{content:"✦";font-size:.8em}
+@keyframes marquee{to{transform:translateX(-50%)}}
+
+/* ---------- フッター ---------- */
+footer{margin-top:32px;padding:16px;border:1px solid var(--line);border-radius:var(--radius,8px);color:var(--sub);font-size:.92rem;text-align:center}
+.more{position:relative;display:flex;align-items:center;justify-content:space-between;margin:28px auto 0;max-width:340px;min-height:58px;padding:0 22px 0 26px;
+  border-radius:var(--radius,8px);background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:16px;text-decoration:none;overflow:hidden;isolation:isolate;
+  box-shadow:0 0 18px 2px rgba(var(--accent-rgb),.55),0 0 48px 6px rgba(var(--accent-rgb),.28);animation:glow-btn 2.8s ease-in-out infinite}
+@keyframes glow-btn{50%{box-shadow:0 0 26px 4px rgba(var(--accent-rgb),.75),0 0 70px 14px rgba(var(--accent-rgb),.38)}}
+.more::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--ink);transform:scaleX(0);transform-origin:right;transition:transform .4s cubic-bezier(.7,0,.2,1)}
+.more:hover::before{transform:scaleX(1);transform-origin:left}
+.site-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:40px;padding-top:18px;border-top:1px solid var(--line);
+  font-family:var(--font-en);font-size:10px;font-weight:700;letter-spacing:.2em;color:var(--sub)}
+.site-bottom a{color:inherit;text-decoration:none}
+.site-bottom a:hover{color:var(--accent)}
+.footer-logo{margin:8px 0 0;font-family:var(--font-en);font-weight:800;font-size:clamp(44px,13.5vw,104px);line-height:.85;letter-spacing:-.04em;text-align:center;white-space:nowrap;
+  color:transparent;background:repeating-linear-gradient(-55deg,rgba(255,255,255,.2) 0 2px,transparent 2px 7px);-webkit-background-clip:text;background-clip:text;user-select:none}
+
+/* 動きを減らす設定の人には、アニメーションを止める */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important}
+  h1 .u-line{background-size:100% 100%}
+}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"><span class="bg-cols"></span><span class="bg-slash"></span></div>
+
+<div class="wrap">
+  <div class="topbar">
+    <a class="logo" href="https://novalis-lab.github.io/"><span class="logo-mark" aria-hidden="true"></span>NOVALIS</a>
+    <a class="back" href="https://novalis-lab.github.io/">← ALL TOOLS</a>
+  </div>
+  <header>
+    <p class="kicker">SI UNIT NOTE</p>
+    <h1><span class="u-line">SI単位</span>変換<span>ノート</span></h1>
+    <p class="lead">数字を入れると、すべての単位の結果と「計算の途中」がすぐ出ます。</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <main>
+  <!-- 表示設定 -->
+  <section class="card">
+    <div class="settings">
+      <div class="grp">
+        <span class="lbl" style="margin:0">数の表し方</span>
+        <div class="seg" id="notation">
+          <button data-v="auto">自動</button><button data-v="plain">ふつう</button><button data-v="sci">×10ⁿ</button>
+        </div>
+      </div>
+      <div class="grp">
+        <label class="lbl" for="sig" style="margin:0">有効数字</label>
+        <select class="sel" id="sig" style="font-size:1rem;padding:6px 8px">
+          <option value="3">3桁</option><option value="4">4桁</option><option value="6">6桁</option><option value="8">8桁</option><option value="10">10桁</option>
+        </select>
+      </div>
+    </div>
+    <p class="note-box" style="margin-bottom:0">「自動」は 100万以上 または 0.001未満 のとき 1.0×10⁶ のような形で表示します。</p>
+  </section>
+
+  <!-- 変換パネル（単位タブ共通） -->
+  <div id="convPanel">
+    <section class="card">
+      <h2 id="convTitle">入力</h2>
+      <label class="lbl" for="val">値</label>
+      <div class="inrow">
+        <button class="pm" id="pm" type="button" aria-label="プラスとマイナスを切り替え">±</button>
+        <input class="num" id="val" type="text" inputmode="decimal" autocomplete="off" value="1">
+        <select class="sel" id="unit" aria-label="入力の単位"></select>
+      </div>
+      <div class="exprow">
+        <span>× 10</span><sup>の</sup>
+        <input class="exp" id="exp" type="text" inputmode="numeric" placeholder="0" aria-label="10の何乗か">
+        <span>乗（大きい・小さい数用、空欄なら0）</span>
+      </div>
+
+      <div class="gaugebox hidden" id="gaugeBox">
+        <div class="row">
+          <span class="t">入力は</span>
+          <div class="seg" id="gIn"><button data-v="abs">絶対圧</button><button data-v="gauge">ゲージ圧</button></div>
+        </div>
+        <div class="row">
+          <span class="t">結果は</span>
+          <div class="seg" id="gOut"><button data-v="abs">絶対圧</button><button data-v="gauge">ゲージ圧</button></div>
+        </div>
+        <div style="font-size:.88rem;color:var(--sub);margin-top:6px">絶対圧 ＝ ゲージ圧 ＋ 大気圧（101.325 kPa）</div>
+      </div>
+
+      <div class="gaugebox hidden" id="calBox">
+        <div class="row">
+          <span class="t">1 cal ＝</span>
+          <div class="seg" id="calSel"><button data-v="th">4.184 J</button><button data-v="it">4.1868 J</button></div>
+        </div>
+        <div style="font-size:.88rem;color:var(--sub);margin-top:6px" id="calDesc"></div>
+      </div>
+
+      <div class="warn hidden" id="err"></div>
+    </section>
+
+    <section class="card">
+      <h2>結果</h2>
+      <ul class="results" id="results"></ul>
+      <p class="note-box hidden" id="calShown"></p>
+    </section>
+
+    <section class="card">
+      <h2>計算の途中</h2>
+      <ul class="steps" id="steps"></ul>
+    </section>
+  </div>
+
+  <!-- 接頭語パネル -->
+  <div id="prefixPanel" class="hidden">
+    <section class="card">
+      <h2>接頭語で変換</h2>
+      <label class="lbl" for="pval">値</label>
+      <div class="inrow">
+        <button class="pm" id="ppm" type="button" aria-label="プラスとマイナスを切り替え">±</button>
+        <input class="num" id="pval" type="text" inputmode="decimal" autocomplete="off" value="1">
+      </div>
+      <div class="inrow" style="margin-top:8px;align-items:center">
+        <select class="sel" id="pfrom" aria-label="元の接頭語"></select>
+        <select class="sel" id="pbase" aria-label="単位記号">
+          <option>m</option><option>g</option><option>Pa</option><option>J</option><option>W</option><option>N</option><option>L</option><option>s</option>
+        </select>
+        <span style="font-size:1.2rem">→</span>
+        <select class="sel" id="pto" aria-label="変換先の接頭語"></select>
+      </div>
+      <div class="warn hidden" id="perr"></div>
+    </section>
+    <section class="card">
+      <h2>結果</h2>
+      <ul class="results" id="presults"></ul>
+    </section>
+    <section class="card">
+      <h2>計算の途中</h2>
+      <ul class="steps" id="psteps"></ul>
+    </section>
+    <section class="card">
+      <h2>接頭語の一覧</h2>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>記号</th><th>読み</th><th>10の何乗</th><th>数で書くと</th></tr></thead>
+          <tbody id="ptable"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="card">
+      <h2>何倍かの早見表</h2>
+      <p style="margin:0 0 8px;font-size:.95rem;color:var(--sub)">「1［行］＝ □［列］」の □ を表しています。例：行 k・列 m は 10⁶ → 1 km ＝ 10⁶ mm（キロはミリの100万倍）。</p>
+      <div class="tbl-wrap"><table class="matrix" id="pmatrix"></table></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>よく使う換算メモ</h2>
+    <ul class="memo" id="memo"></ul>
+  </section>
+
+  </main>
+
+  <div class="ticker-wrap" aria-hidden="true">
+    <div class="ticker"><div class="ticker-track">
+      <span>PRESSURE</span><span>TEMPERATURE</span><span>ENERGY</span><span>FORCE</span><span>POWER</span><span>VOLUME</span><span>DENSITY</span><span>PREFIX</span>
+      <span>PRESSURE</span><span>TEMPERATURE</span><span>ENERGY</span><span>FORCE</span><span>POWER</span><span>VOLUME</span><span>DENSITY</span><span>PREFIX</span>
+    </div></div>
+  </div>
+
+  <footer>学習用の目安です。試験や業務では公式の資料で確認してください。</footer>
+  <a class="more" href="https://novalis-lab.github.io/">ほかのツールを見る<span aria-hidden="true">→</span></a>
+  <div class="site-bottom">
+    <a href="https://novalis-lab.github.io/">NOVALIS TOP</a>
+    <span>© NOVALIS</span>
+  </div>
+  <p class="footer-logo" aria-hidden="true">NOVALIS</p>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- 定数 ---------- */
+const ATM = 101325; // Pa
+const CAL = { th: 4.184, it: 4.1868 };
+const CAL_DESC = {
+  th: '熱化学カロリー（4.184 J）：日本の計量法や栄養表示などで使われる値です。',
+  it: '国際蒸気表カロリー（4.1868 J）：機械・熱工学の古い資料などで使われる値です。'
+};
+
+const state = {
+  tab: 'pressure', notation: 'auto', sig: 6, cal: 'th', gIn: 'abs', gOut: 'abs',
+  inputs: {} // tab -> {val, exp, unit}
+};
+
+const CATS = {
+  pressure: {
+    label: '圧力', base: 'Pa',
+    units: [
+      { id: 'Pa', f: 1 }, { id: 'kPa', f: 1e3 }, { id: 'MPa', f: 1e6 }, { id: 'bar', f: 1e5 },
+      { id: 'atm', f: ATM }, { id: 'kgf/cm²', f: 98066.5 }, { id: 'mmHg', f: ATM / 760 }
+    ],
+    def: 'MPa', defVal: '0.5',
+    memo: [
+      '1 atm ＝ 101.325 kPa ＝ 1.01325 bar ＝ 760 mmHg',
+      '1 MPa ＝ 1000 kPa ＝ 10⁶ Pa',
+      '1 bar ＝ 100 kPa ＝ 0.1 MPa',
+      '1 kgf/cm² ＝ 98.0665 kPa（≒ 0.1 MPa）',
+      '1 mmHg ≒ 133.322 Pa（＝ 101325 ÷ 760）',
+      '絶対圧 ＝ ゲージ圧 ＋ 大気圧（101.325 kPa）'
+    ]
+  },
+  temperature: {
+    label: '温度', base: 'K',
+    units: [{ id: '℃' }, { id: 'K' }, { id: '℉' }],
+    def: '℃', defVal: '25',
+    memo: [
+      'K ＝ ℃ ＋ 273.15',
+      '℉ ＝ ℃ × 9/5 ＋ 32',
+      '℃ ＝ (℉ − 32) × 5/9',
+      '0 ℃ ＝ 273.15 K ＝ 32 ℉、100 ℃ ＝ 373.15 K ＝ 212 ℉',
+      '温度「差」1 ℃ ＝ 温度差 1 K（目盛りの幅は同じ）',
+      '絶対零度：0 K ＝ −273.15 ℃ ＝ −459.67 ℉'
+    ]
+  },
+  energy: {
+    label: '熱量・エネルギー', base: 'J',
+    units: [
+      { id: 'J', f: 1 }, { id: 'kJ', f: 1e3 }, { id: 'MJ', f: 1e6 },
+      { id: 'cal', f: () => CAL[state.cal] }, { id: 'kcal', f: () => CAL[state.cal] * 1000 },
+      { id: 'Wh', f: 3600 }, { id: 'kWh', f: 3.6e6 }
+    ],
+    def: 'kWh', defVal: '1', cal: true,
+    memo: [
+      '1 J ＝ 1 N·m ＝ 1 W·s',
+      '1 kWh ＝ 3600 kJ ＝ 3.6 MJ',
+      '1 cal ＝ 4.184 J（熱化学カロリー）／4.1868 J（国際蒸気表カロリー）',
+      '1 kcal ≒ 4.19 kJ',
+      '1 kWh ≒ 860 kcal'
+    ]
+  },
+  force: {
+    label: '力', base: 'N',
+    units: [
+      { id: 'N', f: 1 }, { id: 'kN', f: 1e3 }, { id: 'MN', f: 1e6 },
+      { id: 'kgf', f: 9.80665 }, { id: 'tf', f: 9806.65 }, { id: 'dyn', f: 1e-5 }
+    ],
+    def: 'kgf', defVal: '1',
+    memo: [
+      '1 N ＝ 1 kg·m/s²',
+      '1 kgf ＝ 9.80665 N（標準重力加速度 g ＝ 9.80665 m/s²）',
+      '1 tf ＝ 1000 kgf ＝ 9.80665 kN',
+      '1 dyn ＝ 10⁻⁵ N（CGS単位）'
+    ]
+  },
+  power: {
+    label: '仕事率', base: 'W',
+    units: [
+      { id: 'W', f: 1 }, { id: 'kW', f: 1e3 }, { id: 'MW', f: 1e6 },
+      { id: 'PS', f: 735.49875, note: '仏馬力' }, { id: 'HP', f: 745.69987158227, note: '英馬力' },
+      { id: 'kcal/h', f: () => CAL[state.cal] * 1000 / 3600 }, { id: 'J/s', f: 1 }
+    ],
+    def: 'kW', defVal: '1', cal: true,
+    memo: [
+      '1 W ＝ 1 J/s',
+      '1 PS（仏馬力）＝ 735.49875 W ≒ 0.7355 kW',
+      '1 HP（英馬力）≒ 745.7 W',
+      '1 kW ≒ 860 kcal/h',
+      '仕事率 × 時間 ＝ 仕事（エネルギー）：1 kW × 1 h ＝ 1 kWh'
+    ]
+  },
+  volume: {
+    label: '体積', base: 'm³',
+    units: [
+      { id: 'm³', f: 1 }, { id: 'L', f: 1e-3 }, { id: 'dL', f: 1e-4 }, { id: 'mL', f: 1e-6 },
+      { id: 'cm³', f: 1e-6 }, { id: 'dm³', f: 1e-3 }, { id: 'mm³', f: 1e-9 }
+    ],
+    def: 'm³', defVal: '1',
+    memo: [
+      '1 m³ ＝ 1000 L',
+      '1 L ＝ 1 dm³ ＝ 1000 cm³ ＝ 1000 mL',
+      '1 mL ＝ 1 cm³（＝ 1 cc）',
+      '1 m³ ＝ 10⁶ cm³ ＝ 10⁹ mm³（長さの3乗で効く）'
+    ]
+  },
+  density: {
+    label: '密度', base: 'kg/m³',
+    units: [
+      { id: 'kg/m³', f: 1 }, { id: 'g/cm³', f: 1000 }, { id: 'g/mL', f: 1000 },
+      { id: 'kg/L', f: 1000 }, { id: 'g/L', f: 1 }, { id: 't/m³', f: 1000 }
+    ],
+    def: 'g/cm³', defVal: '1',
+    memo: [
+      '1 g/cm³ ＝ 1000 kg/m³ ＝ 1 kg/L ＝ 1 t/m³',
+      '1 g/L ＝ 1 kg/m³',
+      '水の密度 ≒ 1.00 g/cm³ ＝ 1000 kg/m³（4 ℃付近）',
+      '空気の密度 ≒ 1.2 kg/m³（20 ℃・1 atm付近）'
+    ]
+  },
+  prefix: {
+    label: '接頭語',
+    memo: [
+      'k（キロ）＝ 10³、M（メガ）＝ 10⁶、G（ギガ）＝ 10⁹',
+      'm（ミリ）＝ 10⁻³、μ（マイクロ）＝ 10⁻⁶、n（ナノ）＝ 10⁻⁹',
+      '隣どうしの k・M・G や m・μ・n は 1000倍ずつ',
+      '面積・体積では接頭語も2乗・3乗になる：1 km² ＝ 10⁶ m²',
+      'h（ヘクト）は hPa（気象）、da（デカ）・d（デシ）は dL などで見かける'
+    ]
+  }
+};
+const ORDER = ['pressure', 'temperature', 'energy', 'force', 'power', 'volume', 'density', 'prefix'];
+
+const PREFIXES = [
+  { s: 'G', n: 9, r: 'ギガ' }, { s: 'M', n: 6, r: 'メガ' }, { s: 'k', n: 3, r: 'キロ' },
+  { s: 'h', n: 2, r: 'ヘクト' }, { s: 'da', n: 1, r: 'デカ' }, { s: '', n: 0, r: '（なし）' },
+  { s: 'd', n: -1, r: 'デシ' }, { s: 'c', n: -2, r: 'センチ' }, { s: 'm', n: -3, r: 'ミリ' },
+  { s: 'μ', n: -6, r: 'マイクロ' }, { s: 'n', n: -9, r: 'ナノ' }
+];
+
+/* ---------- 保存 ---------- */
+const KEY = 'si-converter-v1';
+try {
+  const s = JSON.parse(localStorage.getItem(KEY) || '{}');
+  ['tab', 'notation', 'sig', 'cal', 'gIn', 'gOut'].forEach(k => { if (s[k] !== undefined) state[k] = s[k]; });
+  if (s.inputs) state.inputs = s.inputs;
+} catch (e) {}
+if (!CATS[state.tab]) state.tab = 'pressure';
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+/* ---------- 数の書き方 ---------- */
+const SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻' };
+const sup = n => String(n).split('').map(c => SUP[c] || c).join('');
+
+function plain(x, sig) {
+  if (x === 0) return '0';
+  const r = Number(x.toPrecision(sig));
+  const e = Math.floor(Math.log10(Math.abs(r)));
+  let d = Math.max(0, sig - 1 - e);
+  if (d > 20) d = 20;
+  let s = Math.abs(r) >= 1e21 ? r.toPrecision(sig) : r.toFixed(d);
+  if (s.indexOf('.') >= 0 && s.indexOf('e') < 0) s = s.replace(/0+$/, '').replace(/\.$/, '');
+  return s;
+}
+function sci(x, sig) {
+  if (x === 0) return '0';
+  let [m, e] = x.toExponential(Math.max(0, sig - 1)).split('e');
+  if (m.indexOf('.') >= 0) { m = m.replace(/0+$/, ''); if (m.endsWith('.')) m += '0'; }
+  else m += '.0';
+  const en = parseInt(e, 10);
+  if (en === 0) return m;
+  return m + '×10' + sup(en);
+}
+function fmt(x, sig) {
+  sig = sig || state.sig;
+  if (!isFinite(x)) return '—';
+  const a = Math.abs(x);
+  let useSci = state.notation === 'sci' || (state.notation === 'auto' && a !== 0 && (a >= 1e6 || a < 1e-3));
+  // 「ふつう」でも極端な値は読めないので指数にする
+  if (state.notation === 'plain' && a !== 0 && (a >= 1e21 || a < 1e-15)) useSci = true;
+  return useSci ? sci(x, sig) : plain(x, sig);
+}
+// 計算の途中で使う係数：桁を多めにして丸め誤差を見せない
+const fk = x => fmt(x, Math.max(state.sig, 10));
+
+/* ---------- 入力の読み取り ---------- */
+function toHalf(s) {
+  return s.replace(/[０-９．－＋ｅＥ，]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+          .replace(/[−ー―‐]/g, '-').replace(/[,，\s]/g, '');
+}
+function parseNum(s) {
+  s = toHalf(String(s || ''));
+  if (s === '' || s === '-' || s === '+') return { empty: true };
+  // 1.5×10^6 / 1.5x10^6 / 1.5*10^6 にも対応
+  const m = s.match(/^([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)(?:[×xX*]10\^?([+-]?\d+))?$/);
+  if (!m) return { err: true };
+  let v = parseFloat(m[1]);
+  if (m[2]) v *= Math.pow(10, parseInt(m[2], 10));
+  return isFinite(v) ? { v } : { err: true };
+}
+
+/* ---------- DOM ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function setSeg(el, v) { el.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v ? 'true' : 'false')); }
+function bindSeg(el, key, after) {
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state[key] = b.dataset.v; setSeg(el, state[key]); save(); (after || render)();
+  });
+  setSeg(el, state[key]);
+}
+
+// タブ
+const tabsEl = $('tabs');
+ORDER.forEach(k => {
+  const b = document.createElement('button');
+  b.className = 'tab'; b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.k = k; b.textContent = CATS[k].label;
+  b.addEventListener('click', () => switchTab(k));
+  tabsEl.appendChild(b);
+});
+
+bindSeg($('notation'), 'notation', () => { render(); renderPrefix(); });
+bindSeg($('gIn'), 'gIn');
+bindSeg($('gOut'), 'gOut');
+bindSeg($('calSel'), 'cal');
+$('sig').value = String(state.sig);
+$('sig').addEventListener('change', e => { state.sig = parseInt(e.target.value, 10); save(); render(); renderPrefix(); });
+
+function getInput(tab) {
+  const c = CATS[tab];
+  if (!state.inputs[tab]) state.inputs[tab] = { val: c.defVal, exp: '', unit: c.def };
+  return state.inputs[tab];
+}
+
+function switchTab(k) {
+  state.tab = k; save();
+  tabsEl.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.k === k ? 'true' : 'false'));
+  const isP = k === 'prefix';
+  $('convPanel').classList.toggle('hidden', isP);
+  $('prefixPanel').classList.toggle('hidden', !isP);
+  $('memo').innerHTML = CATS[k].memo.map(m => '<li>' + esc(m) + '</li>').join('');
+  if (isP) { renderPrefix(); return; }
+  const c = CATS[k], inp = getInput(k);
+  $('convTitle').textContent = c.label + 'を入力';
+  $('unit').innerHTML = c.units.map(u => '<option value="' + esc(u.id) + '">' + esc(u.id) + (u.note ? '（' + esc(u.note) + '）' : '') + '</option>').join('');
+  $('unit').value = inp.unit;
+  $('val').value = inp.val;
+  $('exp').value = inp.exp;
+  $('gaugeBox').classList.toggle('hidden', k !== 'pressure');
+  $('calBox').classList.toggle('hidden', !c.cal);
+  // 温度は「×10の何乗」はいらない
+  document.querySelector('#convPanel .exprow').classList.toggle('hidden', k === 'temperature');
+  render();
+}
+
+['val', 'exp'].forEach(id => $(id).addEventListener('input', () => { getInput(state.tab)[id] = $(id).value; save(); render(); }));
+$('unit').addEventListener('change', () => { getInput(state.tab).unit = $('unit').value; save(); render(); });
+function flipSign(el, cb) {
+  const v = el.value.trim();
+  el.value = v.startsWith('-') || v.startsWith('−') ? v.replace(/^[-−]/, '') : '-' + v;
+  cb();
+}
+$('pm').addEventListener('click', () => flipSign($('val'), () => { getInput(state.tab).val = $('val').value; save(); render(); }));
+
+const fu = u => typeof u.f === 'function' ? u.f() : u.f;
+
+/* ---------- 単位変換の描画 ---------- */
+function render() {
+  const k = state.tab; if (k === 'prefix') return;
+  const c = CATS[k], inp = getInput(k);
+  const errEl = $('err'), resEl = $('results'), stEl = $('steps');
+  errEl.classList.add('hidden');
+  const p = parseNum(inp.val);
+  let ex = 0;
+  if (k !== 'temperature' && String(inp.exp).trim() !== '') {
+    const e = parseNum(inp.exp);
+    if (e.err || e.empty || !Number.isInteger(e.v)) { showErr('「10の何乗」には整数を入れてください（例：6、-3）'); return; }
+    ex = e.v;
+  }
+  if (p.empty) { resEl.innerHTML = '<li><span class="unit">数字を入れてください</span></li>'; stEl.innerHTML = ''; $('calShown').classList.add('hidden'); return; }
+  if (p.err) { showErr('数字として読めません。例：0.5、1.5e6、2.3×10^4'); return; }
+  const v = p.v * Math.pow(10, ex);
+  const from = c.units.find(u => u.id === inp.unit) || c.units[0];
+
+  if (k === 'temperature') return renderTemp(v, from.id);
+
+  const warns = [];
+  let rows = '', steps = '';
+  const fF = fu(from);
+  const isP = k === 'pressure';
+  const gIn = isP ? state.gIn : null, gOut = isP ? state.gOut : null;
+  const tag = t => t === 'gauge' ? '<small>（ゲージ）</small>' : (t === 'abs' ? '<small>（絶対）</small>' : '');
+  const tagT = t => t === 'gauge' ? '（ゲージ）' : (t === 'abs' ? '（絶対）' : '');
+  const inStr = fmt(v) + ' ' + from.id;
+
+  if (ex !== 0) steps += '<li>入力：' + esc(fmt(p.v)) + ' × 10' + sup(ex) + ' ＝ <b>' + esc(inStr) + '</b></li>';
+
+  c.units.forEach(u => {
+    const fT = fu(u);
+    const ratio = fF / fT;
+    let r = v * ratio;
+    let line;
+    if (u.id === from.id) line = esc(inStr) + tagT(gIn) + ' はそのまま';
+    else if (Math.abs(ratio - 1) < 1e-12) line = esc(inStr) + ' × 1 ＝ ' + esc(fmt(r) + ' ' + u.id) + '<span class="note">（1 ' + esc(from.id) + ' ＝ 1 ' + esc(u.id) + '）</span>';
+    else if (ratio >= 1) line = esc(inStr) + ' × ' + esc(fk(ratio)) + ' ＝ ' + esc(fmt(r) + ' ' + u.id) + '<span class="note">（1 ' + esc(from.id) + ' ＝ ' + esc(fk(ratio)) + ' ' + esc(u.id) + '）</span>';
+    else line = esc(inStr) + ' ÷ ' + esc(fk(1 / ratio)) + ' ＝ ' + esc(fmt(r) + ' ' + u.id) + '<span class="note">（1 ' + esc(u.id) + ' ＝ ' + esc(fk(1 / ratio)) + ' ' + esc(from.id) + '）</span>';
+
+    if (isP && gIn !== gOut) {
+      const atmU = ATM / fT;
+      const before = r;
+      r = gIn === 'gauge' ? r + atmU : r - atmU;
+      line += '<br>' + (gIn === 'gauge'
+        ? esc(fmt(before) + ' ' + u.id) + '（ゲージ）＋ 大気圧 ' + esc(fk(atmU) + ' ' + u.id) + ' ＝ <b>' + esc(fmt(r) + ' ' + u.id) + '（絶対）</b>'
+        : esc(fmt(before) + ' ' + u.id) + '（絶対）− 大気圧 ' + esc(fk(atmU) + ' ' + u.id) + ' ＝ <b>' + esc(fmt(r) + ' ' + u.id) + '（ゲージ）</b>');
+    } else {
+      line = line.replace(/＝ ([^<]*?)(<span|$)/, (m0, a, b) => '＝ <b>' + a + '</b>' + b);
+    }
+    rows += '<li class="' + (u.id === from.id && gIn === gOut ? 'src' : '') + '"><span class="val">' + esc(fmt(r)) + '</span><span class="unit">' + esc(u.id) + (u.note ? '<small>（' + esc(u.note) + '）</small>' : '') + tag(gOut) + '</span></li>';
+    if (u.id !== from.id || gIn !== gOut) steps += '<li>' + line + '</li>';
+  });
+
+  if (isP) {
+    const absPa = v * fF + (gIn === 'gauge' ? ATM : 0);
+    if (absPa < 0) warns.push('絶対圧がマイナスになっています。絶対圧は 0（完全な真空）より小さくなりません。入力値と「ゲージ圧／絶対圧」の設定を確認してください。');
+    if (gIn !== gOut) steps = '<li><span class="note">ゲージ圧と絶対圧の差は大気圧（1 atm ＝ 101.325 kPa）で計算しています。実際の大気圧は天気や高度で変わります。</span></li>' + steps;
+  }
+  resEl.innerHTML = rows;
+  stEl.innerHTML = steps || '<li>同じ単位なので計算はありません</li>';
+  if (warns.length) { errEl.textContent = warns.join(' '); errEl.classList.remove('hidden'); }
+
+  const cs = $('calShown');
+  if (c.cal) {
+    cs.textContent = 'この計算の cal は 1 cal ＝ ' + CAL[state.cal] + ' J（' + (state.cal === 'th' ? '熱化学カロリー' : '国際蒸気表カロリー') + '）を使っています。';
+    cs.classList.remove('hidden');
+    $('calDesc').textContent = CAL_DESC[state.cal];
+  } else cs.classList.add('hidden');
+}
+
+function showErr(msg) {
+  $('err').textContent = msg; $('err').classList.remove('hidden');
+  $('results').innerHTML = ''; $('steps').innerHTML = ''; $('calShown').classList.add('hidden');
+}
+
+function renderTemp(v, from) {
+  let C;
+  if (from === '℃') C = v; else if (from === 'K') C = v - 273.15; else C = (v - 32) * 5 / 9;
+  const K = C + 273.15, F = C * 9 / 5 + 32;
+  const vals = { '℃': C, 'K': K, '℉': F };
+  const f = x => esc(fmt(x));
+  $('results').innerHTML = ['℃', 'K', '℉'].map(u => '<li class="' + (u === from ? 'src' : '') + '"><span class="val">' + f(vals[u]) + '</span><span class="unit">' + u + '</span></li>').join('');
+  const S = {
+    '℃': ['K ＝ ℃ ＋ 273.15 ＝ ' + f(C) + ' ＋ 273.15 ＝ <b>' + f(K) + ' K</b>',
+          '℉ ＝ ℃ × 9/5 ＋ 32 ＝ ' + f(C) + ' × 1.8 ＋ 32 ＝ <b>' + f(F) + ' ℉</b>'],
+    'K': ['℃ ＝ K − 273.15 ＝ ' + f(K) + ' − 273.15 ＝ <b>' + f(C) + ' ℃</b>',
+          '℉ ＝ (K − 273.15) × 9/5 ＋ 32 ＝ ' + f(C) + ' × 1.8 ＋ 32 ＝ <b>' + f(F) + ' ℉</b>'],
+    '℉': ['℃ ＝ (℉ − 32) × 5/9 ＝ (' + f(F) + ' − 32) ÷ 1.8 ＝ <b>' + f(C) + ' ℃</b>',
+          'K ＝ ℃ ＋ 273.15 ＝ ' + f(C) + ' ＋ 273.15 ＝ <b>' + f(K) + ' K</b>']
+  };
+  $('steps').innerHTML = S[from].map(s => '<li>' + s + '</li>').join('') +
+    '<li><span class="note">温度は「何倍」ではなく、ずらす（＋−）計算が入るので、掛け算だけでは変換できません。</span></li>';
+  $('calShown').classList.add('hidden');
+  if (K < -1e-9) { $('err').textContent = '絶対零度（0 K ＝ −273.15 ℃）より低い温度は存在しません。'; $('err').classList.remove('hidden'); }
+}
+
+/* ---------- 接頭語 ---------- */
+const pname = p => p.s === '' ? '（なし）' : p.s;
+$('pfrom').innerHTML = $('pto').innerHTML = PREFIXES.map((p, i) => '<option value="' + i + '">' + esc(p.s === '' ? '— なし' : p.s + '（' + p.r + '）') + '</option>').join('');
+const pin = state.inputs.prefix || (state.inputs.prefix = { val: '1', from: 2, to: 8, base: 'm' });
+$('pval').value = pin.val; $('pfrom').value = pin.from; $('pto').value = pin.to; $('pbase').value = pin.base;
+['pval', 'pfrom', 'pto', 'pbase'].forEach(id => $(id).addEventListener(id === 'pval' ? 'input' : 'change', () => {
+  pin.val = $('pval').value; pin.from = +$('pfrom').value; pin.to = +$('pto').value; pin.base = $('pbase').value; save(); renderPrefix();
+}));
+$('ppm').addEventListener('click', () => flipSign($('pval'), () => { pin.val = $('pval').value; save(); renderPrefix(); }));
+
+function renderPrefix() {
+  if (state.tab !== 'prefix') return;
+  const base = pin.base;
+  // 一覧
+  $('ptable').innerHTML = PREFIXES.map(p => '<tr><td class="sym">' + esc(p.s || '—') + '</td><td>' + esc(p.r) + '</td><td>10' + sup(p.n) + '</td><td>' + esc(plainBig(p.n)) + '</td></tr>').join('');
+  // 早見表
+  let h = '<thead><tr><th>1［行］＝</th>' + PREFIXES.map(p => '<th>' + esc(p.s || '—') + '</th>').join('') + '</tr></thead><tbody>';
+  PREFIXES.forEach(a => {
+    h += '<tr><th>' + esc(a.s || '—') + '</th>' + PREFIXES.map(b => {
+      const d = a.n - b.n;
+      return '<td class="' + (d === 0 ? 'one' : '') + '">' + (d === 0 ? '1' : '10' + sup(d)) + '</td>';
+    }).join('') + '</tr>';
+  });
+  $('pmatrix').innerHTML = h + '</tbody>';
+
+  // 変換
+  const perr = $('perr'); perr.classList.add('hidden');
+  const p = parseNum(pin.val);
+  if (p.empty) { $('presults').innerHTML = '<li><span class="unit">数字を入れてください</span></li>'; $('psteps').innerHTML = ''; return; }
+  if (p.err) { perr.textContent = '数字として読めません。例：0.5、1.5e6、2.3×10^4'; perr.classList.remove('hidden'); $('presults').innerHTML = ''; $('psteps').innerHTML = ''; return; }
+  const v = p.v, A = PREFIXES[pin.from], B = PREFIXES[pin.to];
+  const d = A.n - B.n;
+  const r = v * Math.pow(10, d);
+  $('presults').innerHTML = PREFIXES.map(q => {
+    const x = v * Math.pow(10, A.n - q.n);
+    return '<li class="' + (q === B ? 'src' : '') + '"><span class="val">' + esc(fmt(x)) + '</span><span class="unit">' + esc(q.s + base) + '</span></li>';
+  }).join('');
+  const inS = fmt(v) + ' ' + A.s + base;
+  let st = '<li>1 ' + esc(A.s + base) + ' ＝ 10' + sup(A.n) + ' ' + esc(base) + '、 1 ' + esc(B.s + base) + ' ＝ 10' + sup(B.n) + ' ' + esc(base) + '</li>';
+  st += '<li>倍率 ＝ 10' + sup(A.n) + ' ÷ 10' + sup(B.n) + ' ＝ 10<sup>' + A.n + ' − (' + B.n + ')</sup> ＝ <b>10' + sup(d) + '</b>' + (d !== 0 ? '<span class="note">（' + esc(plainBig(d)) + ' 倍）</span>' : '') + '</li>';
+  st += '<li>' + esc(inS) + ' × 10' + sup(d) + ' ＝ <b>' + esc(fmt(r) + ' ' + B.s + base) + '</b></li>';
+  st += '<li><span class="note">' + (d > 0 ? '大きい接頭語 → 小さい接頭語 なので、数字は大きくなります。' : d < 0 ? '小さい接頭語 → 大きい接頭語 なので、数字は小さくなります。' : '同じ接頭語なので数字は変わりません。') + '</span></li>';
+  $('psteps').innerHTML = st;
+}
+function plainBig(n) {
+  if (n >= 0) return '1' + '0'.repeat(n);
+  return '0.' + '0'.repeat(-n - 1) + '1';
+}
+
+switchTab(state.tab);
+})();
+</script>
+</body>
+</html>
