@@ -260,7 +260,7 @@ footer{margin-top:32px;padding:16px;border:1px solid var(--line);border-radius:v
           <span class="t">結果は</span>
           <div class="seg" id="gOut"><button data-v="abs">絶対圧</button><button data-v="gauge">ゲージ圧</button></div>
         </div>
-        <div style="font-size:.88rem;color:var(--sub);margin-top:6px">絶対圧 ＝ ゲージ圧 ＋ 大気圧（101.325 kPa）</div>
+        <div style="font-size:.88rem;color:var(--sub);margin-top:6px">絶対圧 ＝ ゲージ圧 ＋ 標準大気圧（0.101325 MPa）</div>
       </div>
 
       <div class="gaugebox hidden" id="calBox">
@@ -378,12 +378,12 @@ const CATS = {
     ],
     def: 'MPa', defVal: '0.5',
     memo: [
-      '1 atm ＝ 101.325 kPa ＝ 1.01325 bar ＝ 760 mmHg',
+      '標準大気圧 1 atm ＝ 0.101325 MPa ＝ 101.325 kPa ＝ 1.01325 bar ＝ 760 mmHg',
       '1 MPa ＝ 1000 kPa ＝ 10⁶ Pa',
       '1 bar ＝ 100 kPa ＝ 0.1 MPa',
       '1 kgf/cm² ＝ 98.0665 kPa（≒ 0.1 MPa）',
       '1 mmHg ≒ 133.322 Pa（＝ 101325 ÷ 760）',
-      '絶対圧 ＝ ゲージ圧 ＋ 大気圧（101.325 kPa）'
+      '絶対圧 ＝ ゲージ圧 ＋ 標準大気圧（0.101325 MPa）'
     ]
   },
   temperature: {
@@ -699,7 +699,7 @@ function render() {
   if (isP) {
     const absPa = v * fF + (gIn === 'gauge' ? ATM : 0);
     if (absPa < 0) warns.push('絶対圧がマイナスになっています。絶対圧は 0（完全な真空）より小さくなりません。入力値と「ゲージ圧／絶対圧」の設定を確認してください。');
-    if (gIn !== gOut) steps = '<li><span class="note">ゲージ圧と絶対圧の差は大気圧（1 atm ＝ 101.325 kPa）で計算しています。実際の大気圧は天気や高度で変わります。</span></li>' + steps;
+    if (gIn !== gOut) steps = '<li><span class="note">ゲージ圧と絶対圧の差は標準大気圧（1 atm ＝ 0.101325 MPa）で計算しています。実際の大気圧は天気や高度で変わります。</span></li>' + steps;
   }
   resEl.innerHTML = rows;
   stEl.innerHTML = steps || '<li>同じ単位なので計算はありません</li>';
