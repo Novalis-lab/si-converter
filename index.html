@@ -107,6 +107,7 @@ label.lbl,.lbl{display:block;font-size:.8rem;font-weight:700;letter-spacing:.14e
 .sel{font:inherit;font-size:1.1rem;font-weight:700;padding:10px 38px 10px 12px;min-width:0;-webkit-appearance:none;appearance:none;
   background:var(--field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%236f9fd4' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center}
 .sel option{background:#141417;color:var(--ink)}
+.sel{max-width:100%;text-overflow:ellipsis}
 .pm{font-family:var(--font-en);font-size:1.3rem;width:54px;cursor:pointer}
 .pm:hover{border-color:var(--accent);color:var(--accent)}
 .exprow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:10px;color:var(--sub);font-size:.95rem}
@@ -132,6 +133,9 @@ label.lbl,.lbl{display:block;font-size:.8rem;font-weight:700;letter-spacing:.14e
 .results .unit{font-size:1rem;font-weight:700;color:var(--sub);white-space:nowrap}
 .results li.src .unit{color:rgba(11,11,13,.7)}
 .results .unit small{font-size:.78rem}
+.results .unit{text-align:right}
+.results .yomi{display:block;margin-top:2px;font-size:.72rem;font-weight:500;letter-spacing:.04em;white-space:normal;color:var(--sub)}
+.results li.src .yomi{color:rgba(11,11,13,.65)}
 
 /* ---------- 計算の途中 ---------- */
 .steps{margin:0;padding:0;list-style:none;display:grid;gap:6px}
@@ -294,7 +298,7 @@ footer{margin-top:32px;padding:16px;border:1px solid var(--line);border-radius:v
       <div class="inrow" style="margin-top:8px;align-items:center">
         <select class="sel" id="pfrom" aria-label="元の接頭語"></select>
         <select class="sel" id="pbase" aria-label="単位記号">
-          <option>m</option><option>g</option><option>Pa</option><option>J</option><option>W</option><option>N</option><option>L</option><option>s</option>
+          <option value="m">m（メートル）</option><option value="g">g（グラム）</option><option value="Pa">Pa（パスカル）</option><option value="J">J（ジュール）</option><option value="W">W（ワット）</option><option value="N">N（ニュートン）</option><option value="L">L（リットル）</option><option value="s">s（秒）</option>
         </select>
         <span style="font-size:1.2rem">→</span>
         <select class="sel" id="pto" aria-label="変換先の接頭語"></select>
@@ -482,6 +486,26 @@ const CATS = {
 };
 const ORDER = ['pressure', 'temperature', 'energy', 'force', 'power', 'volume', 'density', 'prefix'];
 
+/* ---------- 単位の読み方 ---------- */
+const YOMI = {
+  'Pa': 'パスカル', 'kPa': 'キロパスカル', 'MPa': 'メガパスカル', 'bar': 'バール', 'atm': '標準気圧（アトム）',
+  'kgf/cm²': '重量キログラム毎平方センチメートル', 'mmHg': '水銀柱ミリメートル',
+  '℃': 'セルシウス度（度）', 'K': 'ケルビン', '℉': 'カ氏度（ファーレンハイト度）',
+  'J': 'ジュール', 'kJ': 'キロジュール', 'MJ': 'メガジュール', 'cal': 'カロリー', 'kcal': 'キロカロリー',
+  'Wh': 'ワット時', 'kWh': 'キロワット時',
+  'N': 'ニュートン', 'kN': 'キロニュートン', 'MN': 'メガニュートン', 'kgf': '重量キログラム（キログラム重）',
+  'tf': '重量トン（トン重）', 'dyn': 'ダイン',
+  'W': 'ワット', 'kW': 'キロワット', 'MW': 'メガワット', 'PS': 'ピーエス（仏馬力）', 'HP': 'エイチピー（英馬力）',
+  'kcal/h': 'キロカロリー毎時', 'J/s': 'ジュール毎秒',
+  'm³': '立方メートル', 'L': 'リットル', 'dL': 'デシリットル', 'mL': 'ミリリットル',
+  'cm³': '立方センチメートル（シーシー）', 'dm³': '立方デシメートル', 'mm³': '立方ミリメートル',
+  'kg/m³': 'キログラム毎立方メートル', 'g/cm³': 'グラム毎立方センチメートル', 'g/mL': 'グラム毎ミリリットル',
+  'kg/L': 'キログラム毎リットル', 'g/L': 'グラム毎リットル', 't/m³': 'トン毎立方メートル'
+};
+// 接頭語タブの「単位記号」の読み方
+const BASE_YOMI = { 'm': 'メートル', 'g': 'グラム', 'Pa': 'パスカル', 'J': 'ジュール', 'W': 'ワット', 'N': 'ニュートン', 'L': 'リットル', 's': '秒' };
+const yomiHtml = y => y ? '<span class="yomi">' + esc(y) + '</span>' : '';
+
 const PREFIXES = [
   { s: 'G', n: 9, r: 'ギガ' }, { s: 'M', n: 6, r: 'メガ' }, { s: 'k', n: 3, r: 'キロ' },
   { s: 'h', n: 2, r: 'ヘクト' }, { s: 'da', n: 1, r: 'デカ' }, { s: '', n: 0, r: '（なし）' },
@@ -595,7 +619,7 @@ function switchTab(k) {
   if (isP) { renderPrefix(); return; }
   const c = CATS[k], inp = getInput(k);
   $('convTitle').textContent = c.label + 'を入力';
-  $('unit').innerHTML = c.units.map(u => '<option value="' + esc(u.id) + '">' + esc(u.id) + (u.note ? '（' + esc(u.note) + '）' : '') + '</option>').join('');
+  $('unit').innerHTML = c.units.map(u => '<option value="' + esc(u.id) + '">' + esc(u.id) + (YOMI[u.id] ? '（' + esc(YOMI[u.id]) + '）' : (u.note ? '（' + esc(u.note) + '）' : '')) + '</option>').join('');
   $('unit').value = inp.unit;
   $('val').value = inp.val;
   $('exp').value = inp.exp;
@@ -668,7 +692,7 @@ function render() {
     } else {
       line = line.replace(/＝ ([^<]*?)(<span|$)/, (m0, a, b) => '＝ <b>' + a + '</b>' + b);
     }
-    rows += '<li class="' + (u.id === from.id && gIn === gOut ? 'src' : '') + '"><span class="val">' + esc(fmt(r)) + '</span><span class="unit">' + esc(u.id) + (u.note ? '<small>（' + esc(u.note) + '）</small>' : '') + tag(gOut) + '</span></li>';
+    rows += '<li class="' + (u.id === from.id && gIn === gOut ? 'src' : '') + '"><span class="val">' + esc(fmt(r)) + '</span><span class="unit">' + esc(u.id) + (u.note ? '<small>（' + esc(u.note) + '）</small>' : '') + tag(gOut) + yomiHtml(YOMI[u.id]) + '</span></li>';
     if (u.id !== from.id || gIn !== gOut) steps += '<li>' + line + '</li>';
   });
 
@@ -700,7 +724,7 @@ function renderTemp(v, from) {
   const K = C + 273.15, F = C * 9 / 5 + 32;
   const vals = { '℃': C, 'K': K, '℉': F };
   const f = x => esc(fmt(x));
-  $('results').innerHTML = ['℃', 'K', '℉'].map(u => '<li class="' + (u === from ? 'src' : '') + '"><span class="val">' + f(vals[u]) + '</span><span class="unit">' + u + '</span></li>').join('');
+  $('results').innerHTML = ['℃', 'K', '℉'].map(u => '<li class="' + (u === from ? 'src' : '') + '"><span class="val">' + f(vals[u]) + '</span><span class="unit">' + u + yomiHtml(YOMI[u]) + '</span></li>').join('');
   const S = {
     '℃': ['K ＝ ℃ ＋ 273.15 ＝ ' + f(C) + ' ＋ 273.15 ＝ <b>' + f(K) + ' K</b>',
           '℉ ＝ ℃ × 9/5 ＋ 32 ＝ ' + f(C) + ' × 1.8 ＋ 32 ＝ <b>' + f(F) + ' ℉</b>'],
@@ -750,7 +774,7 @@ function renderPrefix() {
   const r = v * Math.pow(10, d);
   $('presults').innerHTML = PREFIXES.map(q => {
     const x = v * Math.pow(10, A.n - q.n);
-    return '<li class="' + (q === B ? 'src' : '') + '"><span class="val">' + esc(fmt(x)) + '</span><span class="unit">' + esc(q.s + base) + '</span></li>';
+    return '<li class="' + (q === B ? 'src' : '') + '"><span class="val">' + esc(fmt(x)) + '</span><span class="unit">' + esc(q.s + base) + yomiHtml((q.s ? q.r : '') + (BASE_YOMI[base] || '')) + '</span></li>';
   }).join('');
   const inS = fmt(v) + ' ' + A.s + base;
   let st = '<li>1 ' + esc(A.s + base) + ' ＝ 10' + sup(A.n) + ' ' + esc(base) + '、 1 ' + esc(B.s + base) + ' ＝ 10' + sup(B.n) + ' ' + esc(base) + '</li>';
